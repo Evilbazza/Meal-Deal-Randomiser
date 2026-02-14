@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Random meal deal generator for Tesco and other UK supermarkets">
+    <meta name="theme-color" content="#00539F">
+    <title>Meal Deal Randomiser</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #00539F 0%, #0076BE 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #00539F;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            color: #E30613;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .info-banner {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .info-banner.first-visit {
+            background: #fff3e0;
+            border-left-color: #FF9800;
+            color: #e65100;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .filter-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .filter-label:last-child {
+            margin-bottom: 0;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .selection {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #00539F;
+        }
+
+        .item-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .item-name {
+            font-size: 18px;
+            color: #222;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .randomize-btn {
+            width: 100%;
+            background: #E30613;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
+        }
+
+        .randomize-btn:hover {
+            background: #c00511;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(227, 6, 19, 0.4);
+        }
+
+        .randomize-btn:active {
+            transform: translateY(0);
+        }
+
+        .secondary-btn {
+            width: 100%;
+            background: #00539F;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .secondary-btn:hover {
+            background: #003d7a;
+        }
+
+        .tertiary-btn {
+            width: 100%;
+            background: white;
+            color: #00539F;
+            border: 2px solid #00539F;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tertiary-btn:hover {
+            background: #f0f7ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 40px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #00539F;
+            font-size: 22px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .edit-section {
+            margin-bottom: 25px;
+        }
+
+        .edit-section h3 {
+            color: #00539F;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .edit-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .save-btn:hover {
+            background: #45a049;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .danger-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .danger-btn:hover {
+            background: #da190b;
+        }
+
+        .info-text {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .info-text strong {
+            color: #333;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .item.animate {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2000;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .logo {
+                font-size: 40px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🛒</div>
+            <h1>Meal Deal Randomiser</h1>
+            <div class="subtitle">Let fate decide your lunch!</div>
+            <div class="price">£3.60</div>
+        </div>
+
+        <div class="info-banner first-visit" id="firstVisitBanner" style="display: none;">
+            👋 <strong>Welcome!</strong> This is your personal meal deal randomiser. You can customize the options to match your local Tesco (or any supermarket). Your edits save to your device only.
+        </div>
+
+        <div class="filters">
+            <label class="filter-label">
+                <input type="checkbox" id="vegetarian">
+                <span>Vegetarian only</span>
+            </label>
+            <label class="filter-label">
+                <input type="checkbox" id="noCrisps">
+                <span>No crisps</span>
+            </label>
+        </div>
+
+        <div class="selection" id="selection">
+            <div class="empty-state">
+                Press the button below to discover your meal deal destiny! 🎲
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="randomize-btn" id="randomizeBtn">
+                🎲 Randomise My Meal Deal
+            </button>
+            <button class="secondary-btn" id="editBtn">
+                ✏️ Edit Meal Options
+            </button>
+            <button class="tertiary-btn" id="moreBtn">
+                ⚙️ More Options
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Meal Deal Options</h2>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+
+            <div class="info-text">
+                <strong>How to edit:</strong> Add or remove items, one per line. Your changes are saved automatically to your browser.
+            </div>
+
+            <div class="edit-section">
+                <h3>All Mains</h3>
+                <textarea id="editMainsAll"></textarea>
+                <div class="help-text">All sandwiches, wraps, salads, etc.</div>
+            </div>
+
+            <div class="edit-section">
+                <h3>Vegetarian Mains</h3>
+                <textarea id="editMainsVeg"></textarea>
+                <div class="help-text">Meatless options only</div>
+            </div>
+
+            <div class="edit-section">
+                <h3>Crisps</h3>
+                <textarea id="editSnacksCrisps"></textarea>
+                <div class="help-text">All crisp varieties</div>
+            </div>
+
+            <div class="edit-section">
+                <h3>Other Snacks</h3>
+                <textarea id="editSnacksOther"></textarea>
+                <div class="help-text">Protein bars, fruit, cheese, etc.</div>
+            </div>
+
+            <div class="edit-section">
+                <h3>Drinks</h3>
+                <textarea id="editDrinks"></textarea>
+                <div class="help-text">All available drinks</div>
+            </div>
+
+            <button class="save-btn" onclick="saveData()">💾 Save Changes</button>
+        </div>
+    </div>
+
+    <!-- More Options Modal -->
+    <div class="modal" id="moreModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>More Options</h2>
+                <button class="close-btn" onclick="closeMoreModal()">&times;</button>
+            </div>
+
+            <div class="info-text">
+                <strong>Your data is stored locally</strong> in your browser. These options help you manage your customizations.
+            </div>
+
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="exportData()">📤 Export Data</button>
+                <button class="secondary-btn" onclick="importData()">📥 Import Data</button>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="danger-btn" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+            </div>
+
+            <div class="info-text" style="margin-top: 20px; font-size: 13px;">
+                <strong>Export:</strong> Download your custom list to share or back up.<br>
+                <strong>Import:</strong> Load a previously exported list.<br>
+                <strong>Reset:</strong> Restore the original Tesco meal deal items.
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==========================================
+        // 📝 DEFAULT MEAL DEAL DATA
+        // ==========================================
+        
+        const DEFAULT_DATA = {
+            mains: {
+                all: [
+                    "Chicken & Bacon Caesar Wrap",
+                    "BLT Triple",
+                    "Tuna Crunch Sub",
+                    "Chicken Tikka Wrap",
+                    "All Day Breakfast Triple",
+                    "Southern Fried Chicken Wrap",
+                    "Prawn Mayo Sandwich",
+                    "Ham & Cheese Sandwich",
+                    "Coronation Chicken Sandwich",
+                    "BBQ Pulled Pork Wrap",
+                    "Chicken Salad Bowl",
+                    "Beef & Horseradish Sandwich",
+                    "Egg & Cress Triple",
+                    "Chicken & Sweetcorn Sandwich"
+                ],
+                vegetarian: [
+                    "Cheese & Onion Sandwich",
+                    "Egg Mayo Sandwich",
+                    "Falafel Wrap",
+                    "Mozzarella & Tomato Pasta",
+                    "Ploughman's Sandwich",
+                    "Cheese Salad Bowl",
+                    "Hummus & Roasted Veg Wrap",
+                    "Mature Cheddar & Pickle Sandwich",
+                    "Brie & Cranberry Sandwich"
+                ]
+            },
+            snacks: {
+                crisps: [
+                    "Walkers Ready Salted Crisps",
+                    "Walkers Cheese & Onion Crisps",
+                    "Walkers Salt & Vinegar Crisps",
+                    "McCoy's Flame Grilled Steak Crisps",
+                    "Doritos Tangy Cheese",
+                    "Kettle Chips Sea Salt",
+                    "Pom-Bear Original",
+                    "Wotsits Cheese",
+                    "Quavers Cheese"
+                ],
+                other: [
+                    "Naked Bar (various flavours)",
+                    "Graze Protein Bites",
+                    "Mini Cheddars",
+                    "Peperami",
+                    "Babybel Cheese",
+                    "Propercorn Sweet & Salty Popcorn",
+                    "Trek Protein Bar",
+                    "Fruit Pot",
+                    "Protein Pot",
+                    "Nature Valley Crunchy Bar"
+                ]
+            },
+            drinks: [
+                "Coca-Cola 500ml",
+                "Diet Coke 500ml",
+                "Fanta Orange 500ml",
+                "Sprite 500ml",
+                "Coca-Cola Zero 500ml",
+                "Innocent Smoothie",
+                "Tropicana Orange Juice",
+                "Ribena Blackcurrant",
+                "Lucozade Sport Orange",
+                "Lucozade Energy Original",
+                "Red Bull",
+                "Monster Energy",
+                "Evian Water 500ml",
+                "San Pellegrino Sparkling Water",
+                "Oasis Summer Fruits",
+                "Capri-Sun",
+                "Starbucks Frappuccino",
+                "Costa Coffee RTD",
+                "Vitamin Water"
+            ]
+        };
+
+        // ==========================================
+        // 🔧 APP CODE
+        // ==========================================
+
+        let mealData = loadData();
+
+        // Check if first visit
+        if (!localStorage.getItem('hasVisited')) {
+            document.getElementById('firstVisitBanner').style.display = 'block';
+            localStorage.setItem('hasVisited', 'true');
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('mealDealData');
+            return saved ? JSON.parse(saved) : DEFAULT_DATA;
+        }
+
+        function saveDataToStorage() {
+            localStorage.setItem('mealDealData', JSON.stringify(mealData));
+        }
+
+        function getRandomItem(array) {
+            if (!array || array.length === 0) return 'No options available';
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function randomizeMealDeal() {
+            const isVegetarian = document.getElementById('vegetarian').checked;
+            const noCrisps = document.getElementById('noCrisps').checked;
+
+            const mainOptions = isVegetarian ? mealData.mains.vegetarian : mealData.mains.all;
+            const selectedMain = getRandomItem(mainOptions);
+
+            let snackOptions = [];
+            if (noCrisps) {
+                snackOptions = mealData.snacks.other;
+            } else {
+                snackOptions = [...mealData.snacks.crisps, ...mealData.snacks.other];
+            }
+            const selectedSnack = getRandomItem(snackOptions);
+
+            const selectedDrink = getRandomItem(mealData.drinks);
+
+            const selectionDiv = document.getElementById('selection');
+            selectionDiv.innerHTML = `
+                <div class="item animate">
+                    <div class="item-label">Main</div>
+                    <div class="item-name">${selectedMain}</div>
+                </div>
+                <div class="item animate">
+                    <div class="item-label">Snack</div>
+                    <div class="item-name">${selectedSnack}</div>
+                </div>
+                <div class="item animate">
+                    <div class="item-label">Drink</div>
+                    <div class="item-name">${selectedDrink}</div>
+                </div>
+            `;
+        }
+
+        function openEditModal() {
+            document.getElementById('editMainsAll').value = mealData.mains.all.join('\n');
+            document.getElementById('editMainsVeg').value = mealData.mains.vegetarian.join('\n');
+            document.getElementById('editSnacksCrisps').value = mealData.snacks.crisps.join('\n');
+            document.getElementById('editSnacksOther').value = mealData.snacks.other.join('\n');
+            document.getElementById('editDrinks').value = mealData.drinks.join('\n');
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        function openMoreModal() {
+            document.getElementById('moreModal').classList.add('active');
+        }
+
+        function closeMoreModal() {
+            document.getElementById('moreModal').classList.remove('active');
+        }
+
+        function saveData() {
+            mealData = {
+                mains: {
+                    all: document.getElementById('editMainsAll').value.split('\n').filter(i => i.trim()),
+                    vegetarian: document.getElementById('editMainsVeg').value.split('\n').filter(i => i.trim())
+                },
+                snacks: {
+                    crisps: document.getElementById('editSnacksCrisps').value.split('\n').filter(i => i.trim()),
+                    other: document.getElementById('editSnacksOther').value.split('\n').filter(i => i.trim())
+                },
+                drinks: document.getElementById('editDrinks').value.split('\n').filter(i => i.trim())
+            };
+            saveDataToStorage();
+            closeEditModal();
+            showToast('✅ Changes saved successfully!');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(mealData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'meal-deal-data.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            showToast('📤 Data exported successfully!');
+        }
+
+        function importData() {
+            document.getElementById('fileInput').click();
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    // Validate structure
+                    if (imported.mains && imported.snacks && imported.drinks) {
+                        mealData = imported;
+                        saveDataToStorage();
+                        showToast('📥 Data imported successfully!');
+                        closeMoreModal();
+                    } else {
+                        showToast('❌ Invalid file format');
+                    }
+                } catch (error) {
+                    showToast('❌ Error reading file');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Reset input
+        });
+
+        function resetToDefaults() {
+            if (confirm('Are you sure you want to reset to the default Tesco meal deal items? This will delete all your customizations.')) {
+                mealData = JSON.parse(JSON.stringify(DEFAULT_DATA)); // Deep clone
+                saveDataToStorage();
+                showToast('🔄 Reset to defaults');
+                closeMoreModal();
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('randomizeBtn').addEventListener('click', randomizeMealDeal);
+        document.getElementById('editBtn').addEventListener('click', openEditModal);
+        document.getElementById('moreBtn').addEventListener('click', openMoreModal);
+
+        // Close modals when clicking outside
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+        document.getElementById('moreModal').addEventListener('click', function(e) {
+            if (e.target === this) closeMoreModal();
+        });
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js').catch(() => {
+                    // Silent fail if service worker not available
+                });
+            });
+        }
+    </script>
+</body>
+</html>
