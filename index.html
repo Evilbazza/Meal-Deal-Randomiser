@@ -120,6 +120,56 @@
             border-radius: 8px;
             padding: 15px;
             border-left: 4px solid #00539F;
+            position: relative;
+        }
+
+        .item.locked {
+            background: #fff8e1;
+            border-left-color: #FFA500;
+        }
+
+        .item.rolling .item-name {
+            animation: blur-pulse 0.08s infinite;
+            color: #666;
+        }
+
+        @keyframes blur-pulse {
+            0%, 100% {
+                filter: blur(0px);
+                opacity: 1;
+            }
+            50% {
+                filter: blur(1px);
+                opacity: 0.7;
+            }
+        }
+
+        .lock-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .lock-btn:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .lock-btn.locked {
+            background: #FFA500;
+            border-color: #FF8C00;
+            color: white;
         }
 
         .item-label {
@@ -404,7 +454,6 @@
             <div class="logo">🛒</div>
             <h1>Meal Deal Randomiser</h1>
             <div class="subtitle">Let fate decide your lunch!</div>
-            <div class="price">£3.85</div>
         </div>
 
         <div class="info-banner first-visit" id="firstVisitBanner" style="display: none;">
@@ -432,6 +481,9 @@
             <button class="randomize-btn" id="randomizeBtn">
                 🎲 Randomise My Meal Deal
             </button>
+            <div style="text-align: center; font-size: 13px; color: #666; margin-top: -5px; margin-bottom: 10px;">
+                💡 Tip: Click the 🔓 lock icons to hold items while re-rolling
+            </div>
             <button class="secondary-btn" id="editBtn">
                 ✏️ Edit Meal Options
             </button>
@@ -610,6 +662,16 @@
         // ==========================================
 
         let mealData = loadData();
+        let lockedItems = {
+            main: false,
+            snack: false,
+            drink: false
+        };
+        let currentSelection = {
+            main: null,
+            snack: null,
+            drink: null
+        };
 
         // Check if first visit
         if (!localStorage.getItem('hasVisited')) {
@@ -631,38 +693,168 @@
             return array[Math.floor(Math.random() * array.length)];
         }
 
+        function toggleLock(type) {
+            lockedItems[type] = !lockedItems[type];
+            updateLockButtons();
+        }
+
+        function updateLockButtons() {
+            // Update button states if they exist
+            const buttons = {
+                main: document.getElementById('lockMain'),
+                snack: document.getElementById('lockSnack'),
+                drink: document.getElementById('lockDrink')
+            };
+
+            Object.keys(buttons).forEach(key => {
+                if (buttons[key]) {
+                    if (lockedItems[key]) {
+                        buttons[key].classList.add('locked');
+                        buttons[key].textContent = '🔒';
+                    } else {
+                        buttons[key].classList.remove('locked');
+                        buttons[key].textContent = '🔓';
+                    }
+                }
+            });
+
+            // Update item backgrounds
+            const items = document.querySelectorAll('.item');
+            items.forEach((item, index) => {
+                const types = ['main', 'snack', 'drink'];
+                if (lockedItems[types[index]]) {
+                    item.classList.add('locked');
+                } else {
+                    item.classList.remove('locked');
+                }
+            });
+        }
+
         function randomizeMealDeal() {
             const isVegetarian = document.getElementById('vegetarian').checked;
             const noCrisps = document.getElementById('noCrisps').checked;
 
-            const mainOptions = isVegetarian ? mealData.mains.vegetarian : mealData.mains.all;
-            const selectedMain = getRandomItem(mainOptions);
+            // Disable button during animation
+            const btn = document.getElementById('randomizeBtn');
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
 
+            // Get options for each category
+            const mainOptions = isVegetarian ? mealData.mains.vegetarian : mealData.mains.all;
             let snackOptions = [];
             if (noCrisps) {
                 snackOptions = mealData.snacks.other;
             } else {
                 snackOptions = [...mealData.snacks.crisps, ...mealData.snacks.other];
             }
-            const selectedSnack = getRandomItem(snackOptions);
+            const drinkOptions = mealData.drinks;
 
-            const selectedDrink = getRandomItem(mealData.drinks);
+            // Determine final selections
+            let finalMain, finalSnack, finalDrink;
 
+            if (!lockedItems.main) {
+                finalMain = getRandomItem(mainOptions);
+                currentSelection.main = finalMain;
+            } else {
+                finalMain = currentSelection.main || 'No selection';
+            }
+
+            if (!lockedItems.snack) {
+                finalSnack = getRandomItem(snackOptions);
+                currentSelection.snack = finalSnack;
+            } else {
+                finalSnack = currentSelection.snack || 'No selection';
+            }
+
+            if (!lockedItems.drink) {
+                finalDrink = getRandomItem(drinkOptions);
+                currentSelection.drink = finalDrink;
+            } else {
+                finalDrink = currentSelection.drink || 'No selection';
+            }
+
+            // Create the rolling animation
             const selectionDiv = document.getElementById('selection');
+            
+            // Initial setup with spinning items
             selectionDiv.innerHTML = `
-                <div class="item animate">
+                <div class="item ${lockedItems.main ? 'locked' : ''} rolling">
+                    <button class="lock-btn ${lockedItems.main ? 'locked' : ''}" id="lockMain" onclick="toggleLock('main')">
+                        ${lockedItems.main ? '🔒' : '🔓'}
+                    </button>
                     <div class="item-label">Main</div>
-                    <div class="item-name">${selectedMain}</div>
+                    <div class="item-name" id="rollingMain">${lockedItems.main ? finalMain : '...'}</div>
                 </div>
-                <div class="item animate">
+                <div class="item ${lockedItems.snack ? 'locked' : ''} rolling">
+                    <button class="lock-btn ${lockedItems.snack ? 'locked' : ''}" id="lockSnack" onclick="toggleLock('snack')">
+                        ${lockedItems.snack ? '🔒' : '🔓'}
+                    </button>
                     <div class="item-label">Snack</div>
-                    <div class="item-name">${selectedSnack}</div>
+                    <div class="item-name" id="rollingSnack">${lockedItems.snack ? finalSnack : '...'}</div>
                 </div>
-                <div class="item animate">
+                <div class="item ${lockedItems.drink ? 'locked' : ''} rolling">
+                    <button class="lock-btn ${lockedItems.drink ? 'locked' : ''}" id="lockDrink" onclick="toggleLock('drink')">
+                        ${lockedItems.drink ? '🔒' : '🔓'}
+                    </button>
                     <div class="item-label">Drink</div>
-                    <div class="item-name">${selectedDrink}</div>
+                    <div class="item-name" id="rollingDrink">${lockedItems.drink ? finalDrink : '...'}</div>
                 </div>
             `;
+
+            // Roll the unlocked items
+            let rollCount = 0;
+            const maxRolls = 15; // Number of times to flash different options
+            const rollInterval = 80; // Speed of rolling (ms)
+
+            const rollTimer = setInterval(() => {
+                if (!lockedItems.main) {
+                    document.getElementById('rollingMain').textContent = getRandomItem(mainOptions);
+                }
+                if (!lockedItems.snack) {
+                    document.getElementById('rollingSnack').textContent = getRandomItem(snackOptions);
+                }
+                if (!lockedItems.drink) {
+                    document.getElementById('rollingDrink').textContent = getRandomItem(drinkOptions);
+                }
+
+                rollCount++;
+
+                // Stop rolling and show final results
+                if (rollCount >= maxRolls) {
+                    clearInterval(rollTimer);
+                    
+                    // Show final selections with animation
+                    setTimeout(() => {
+                        selectionDiv.innerHTML = `
+                            <div class="item ${lockedItems.main ? 'locked' : ''} animate">
+                                <button class="lock-btn ${lockedItems.main ? 'locked' : ''}" id="lockMain" onclick="toggleLock('main')">
+                                    ${lockedItems.main ? '🔒' : '🔓'}
+                                </button>
+                                <div class="item-label">Main</div>
+                                <div class="item-name">${finalMain}</div>
+                            </div>
+                            <div class="item ${lockedItems.snack ? 'locked' : ''} animate">
+                                <button class="lock-btn ${lockedItems.snack ? 'locked' : ''}" id="lockSnack" onclick="toggleLock('snack')">
+                                    ${lockedItems.snack ? '🔒' : '🔓'}
+                                </button>
+                                <div class="item-label">Snack</div>
+                                <div class="item-name">${finalSnack}</div>
+                            </div>
+                            <div class="item ${lockedItems.drink ? 'locked' : ''} animate">
+                                <button class="lock-btn ${lockedItems.drink ? 'locked' : ''}" id="lockDrink" onclick="toggleLock('drink')">
+                                    ${lockedItems.drink ? '🔒' : '🔓'}
+                                </button>
+                                <div class="item-label">Drink</div>
+                                <div class="item-name">${finalDrink}</div>
+                            </div>
+                        `;
+
+                        // Re-enable button
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    }, 100);
+                }
+            }, rollInterval);
         }
 
         function openEditModal() {
